@@ -106,8 +106,8 @@ export class PerformanceMonitor {
       frameTime: this.getAverageFrameTime(),
       memoryUsage: this.getMemoryUsage(),
       audioLatency: this.getAverageAudioLatency(),
-      particleCount: 0, // Will be set externally
-      vertexCount: 0    // Will be set externally
+      particleCount: this.lastParticleCount,
+      vertexCount: this.lastVertexCount
     };
     
     this.updateDisplay(metrics);
@@ -206,8 +206,14 @@ export class PerformanceMonitor {
    * Update external metrics (particles, vertices)
    */
   updateExternalMetrics(particleCount: number, vertexCount: number): void {
-    // These will be included in the next endFrame() call
+    // Store these metrics to be included in the next endFrame() call
+    this.lastParticleCount = particleCount;
+    this.lastVertexCount = vertexCount;
   }
+
+  // Add these properties to store the metrics
+  private lastParticleCount = 0;
+  private lastVertexCount = 0;
 
   /**
    * Check if performance is acceptable

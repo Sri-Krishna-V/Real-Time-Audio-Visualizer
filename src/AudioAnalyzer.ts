@@ -41,6 +41,7 @@ export class AudioAnalyzer {
 
   // Current audio element for file playback
   private currentAudioElement: HTMLAudioElement | null = null;
+  private currentStream: MediaStream | null = null;
   private isInitialized = false;
 
   constructor(config?: Partial<AudioAnalyzerConfig>) {
@@ -192,7 +193,7 @@ export class AudioAnalyzer {
         this.source.connect(this.analyser!);
         
         // Store the stream for cleanup
-        (this as any).currentStream = stream;
+        this.currentStream = stream;
         
         console.log(`Microphone connected successfully with config ${i + 1}`);
         console.log('Audio track settings:', audioTracks[0].getSettings());
@@ -297,12 +298,11 @@ export class AudioAnalyzer {
     }
     
     // Clean up media stream if it exists
-    if ((this as any).currentStream) {
-      const stream = (this as any).currentStream as MediaStream;
-      stream.getTracks().forEach(track => {
+    if (this.currentStream) {
+      this.currentStream.getTracks().forEach(track => {
         track.stop();
       });
-      (this as any).currentStream = null;
+      this.currentStream = null;
     }
     
     if (this.currentAudioElement) {
