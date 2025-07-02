@@ -296,4 +296,30 @@ export class PerformanceMonitor {
     this.frameTimeHistory = [];
     this.audioLatencyHistory = [];
   }
+
+  /**
+   * Get current performance stats
+   */
+  getStats(): PerformanceMetrics {
+    const currentFPS = this.fpsHistory.length > 0 
+      ? this.fpsHistory[this.fpsHistory.length - 1] 
+      : 0;
+    
+    const currentFrameTime = this.frameTimeHistory.length > 0
+      ? this.frameTimeHistory[this.frameTimeHistory.length - 1]
+      : 0;
+    
+    const currentAudioLatency = this.audioLatencyHistory.length > 0
+      ? this.audioLatencyHistory[this.audioLatencyHistory.length - 1]
+      : 0;
+      
+    return {
+      fps: currentFPS,
+      frameTime: currentFrameTime,
+      memoryUsage: this.getMemoryUsage(),
+      audioLatency: currentAudioLatency,
+      particleCount: 0, // Will be updated by caller
+      vertexCount: 0    // Will be updated by caller
+    };
+  }
 }
