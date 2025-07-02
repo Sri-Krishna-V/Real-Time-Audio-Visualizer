@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Audio Visualizer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #000;
+            color: #fff;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        #ui-overlay {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .control-group h3 {
+            font-size: 14px;
+            font-weight: bold;
+            color: #00ffff;
+            margin-bottom: 5px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 8px 16px;
+            background: rgba(0, 255, 255, 0.2);
+            border: 1px solid #00ffff;
+            color: #00ffff;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: rgba(0, 255, 255, 0.4);
+            transform: translateY(-1px);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        button.active {
+            background: #00ffff;
+            color: #000;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-upload-label {
+            padding: 8px 16px;
+            background: rgba(255, 100, 255, 0.2);
+            border: 1px solid #ff64ff;
+            color: #ff64ff;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .file-upload-label:hover {
+            background: rgba(255, 100, 255, 0.4);
+            transform: translateY(-1px);
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .slider-container label {
+            font-size: 12px;
+            min-width: 60px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: #00ffff;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .status-indicator {
+            font-size: 12px;
+            padding: 5px 10px;
+            border-radius: 15px;
+            background: rgba(255, 0, 0, 0.2);
+            border: 1px solid #ff0000;
+            color: #ff0000;
+        }
+
+        .status-indicator.active {
+            background: rgba(0, 255, 0, 0.2);
+            border-color: #00ff00;
+            color: #00ff00;
+        }
+
+        #error-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(220, 53, 69, 0.95);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            display: none;
+            z-index: 1000;
+            text-align: left;
+            max-width: 500px;
+            max-height: 70vh;
+            overflow-y: auto;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+        }
+
+        #error-message h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #fff;
+            text-align: center;
+        }
+
+        #error-message p {
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        #error-message button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 10px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        #error-message button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            #ui-overlay {
+                top: 10px;
+                left: 10px;
+                right: 10px;
+                padding: 15px;
+            }
+            
+            .button-group {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    
+    <div id="ui-overlay">
+        <div class="control-group">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3>Audio Input</h3>
+                <button id="help-btn" style="background: none; border: 1px solid rgba(255,255,255,0.3); color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer;">❓ Help</button>
+            </div>
+            <div class="button-group">
+                <button id="mic-btn">🎤 Microphone</button>
+                <label for="file-input" class="file-upload-label">📁 Upload Audio</label>
+                <input type="file" id="file-input" accept="audio/*">
+            </div>
+            <div class="status-indicator" id="audio-status">No audio input</div>
+        </div>
+
+        <div class="control-group">
+            <h3>Playback Controls</h3>
+            <div class="button-group">
+                <button id="play-btn" disabled>▶️ Play</button>
+                <button id="pause-btn" disabled>⏸️ Pause</button>
+                <button id="stop-btn" disabled>⏹️ Stop</button>
+            </div>
+            <div class="slider-container">
+                <label>Volume:</label>
+                <input type="range" id="volume-slider" min="0" max="100" value="50">
+                <span id="volume-value">50%</span>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <h3>Visual Settings</h3>
+            <div class="button-group">
+                <button id="geometry-mode" class="active">Icosphere</button>
+                <button id="particle-toggle" class="active">Particles</button>
+                <button id="wireframe-toggle">Wireframe</button>
+            </div>
+            <div class="slider-container">
+                <label>Sensitivity:</label>
+                <input type="range" id="sensitivity-slider" min="1" max="10" value="5">
+                <span id="sensitivity-value">5</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div id="help-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 1000; backdrop-filter: blur(5px);">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(20, 20, 20, 0.95); padding: 30px; border-radius: 15px; max-width: 600px; max-height: 80vh; overflow-y: auto; border: 1px solid rgba(255,255,255,0.2);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="color: #fff; margin: 0;">🎵 Audio Visualizer Help</h2>
+                <button id="help-close" style="background: none; border: none; color: #fff; font-size: 24px; cursor: pointer; padding: 0; width: 30px; height: 30px;">&times;</button>
+            </div>
+            
+            <div style="color: #fff; line-height: 1.6;">
+                <h3 style="color: #ff6b6b; margin-bottom: 10px;">🎤 Microphone Issues?</h3>
+                <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <p><strong>If microphone access is denied:</strong></p>
+                    <ol style="margin: 10px 0; padding-left: 20px;">
+                        <li>Look for a microphone icon 🎤 in your browser's address bar</li>
+                        <li>Click it and select "Allow" or "Always allow"</li>
+                        <li>Refresh the page and try again</li>
+                    </ol>
+                    
+                    <p><strong>Browser-specific help:</strong></p>
+                    <ul style="margin: 10px 0; padding-left: 20px;">
+                        <li><strong>Chrome:</strong> Click the microphone icon in the address bar</li>
+                        <li><strong>Firefox:</strong> Click the shield icon, disable tracking protection</li>
+                        <li><strong>Safari:</strong> Safari > Preferences > Websites > Microphone</li>
+                        <li><strong>Edge:</strong> Click the lock icon in the address bar</li>
+                    </ul>
+                </div>
+                
+                <h3 style="color: #4ecdc4; margin-bottom: 10px;">🛠️ Troubleshooting</h3>
+                <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <ul style="margin: 0; padding-left: 20px;">
+                        <li>Ensure you're using <strong>HTTPS</strong> or <strong>localhost</strong></li>
+                        <li>Check that your microphone is connected and working</li>
+                        <li>Close other apps that might be using the microphone</li>
+                        <li>Try refreshing the page or restarting your browser</li>
+                        <li>Test in an incognito/private window</li>
+                    </ul>
+                </div>
+                
+                <h3 style="color: #45b7d1; margin-bottom: 10px;">🎹 How to Use</h3>
+                <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 8px;">
+                    <ol style="margin: 0; padding-left: 20px;">
+                        <li>Click "🎤 Microphone" or upload an audio file</li>
+                        <li>Allow microphone access when prompted</li>
+                        <li>Adjust volume and sensitivity to your preference</li>
+                        <li>Toggle between different visual modes</li>
+                        <li>Enjoy the real-time audio visualization!</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="error-message">
+        <h3>Error</h3>
+        <p id="error-text"></p>
+        <button onclick="document.getElementById('error-message').style.display='none'">Close</button>
+        <div style="margin-top: 10px; font-size: 12px; opacity: 0.7;">Click anywhere to dismiss</div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

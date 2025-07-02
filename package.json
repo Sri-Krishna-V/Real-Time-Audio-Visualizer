@@ -1,0 +1,27 @@
+{
+  "name": "real-time-audio-visualizer",
+  "version": "1.0.0",
+  "description": "Interactive 3D audio visualizer with real-time frequency analysis",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "three": "^0.158.0",
+    "@types/three": "^0.158.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0",
+    "typescript": "^5.0.0",
+    "dat.gui": "^0.7.9",
+    "stats.js": "^0.17.0",
+    "@types/dat.gui": "^0.7.9",
+    "@types/stats.js": "^0.17.0"
+  },
+  "keywords": ["audio", "visualizer", "three.js", "web-audio-api", "3d"],
+  "author": "Your Name",
+  "license": "MIT"
+}
